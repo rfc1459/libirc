@@ -1,0 +1,8 @@
+ebin/
+*.beam
+*.gz
+*~
+*.swp
+[#]*[#]
+doc/
+.eunit/

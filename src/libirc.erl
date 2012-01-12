@@ -106,6 +106,16 @@ parse_args(<<Ch:8, Packet/binary>>, State) ->
 
 -ifdef(TEST).
 
+empty_packet_test() ->
+    Packet = parse([]),
+    ?assertEqual(<<>>,
+                 proplists:get_value(prefix, Packet)),
+    ?assertEqual([],
+                 proplists:get_value(command, Packet)),
+    ?assertEqual([],
+                 proplists:get_value(args, Packet)),
+    ok.
+
 single_command_test() ->
     ?assertEqual("QUIT",
                  proplists:get_value(command, parse("QUIT"))),

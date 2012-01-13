@@ -122,7 +122,7 @@ to_rfc1459_lower(Str)->
 %% -------------------------------------------------------------------
 %% Module initializer
 %% -------------------------------------------------------------------
--spec init() -> none().
+-spec init() -> 'ok' | {error, Reason::term()}.
 init() ->
     PrivDir = case code:priv_dir(?MODULE) of
                   {error, bad_name} ->
@@ -132,7 +132,7 @@ init() ->
                   Path ->
                       Path
               end,
-    erlang:load_nif(filename:join(PrivDir, ?MODULE), 0).
+    erlang:load_nif(filename:join(PrivDir, atom_to_list(?MODULE)), 0).
 
 %% -------------------------------------------------------------------
 %% IRC parser - second stage: parse command

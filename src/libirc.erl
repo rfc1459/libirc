@@ -68,7 +68,7 @@ nif_stub_error(Line) ->
 %% @doc FIXME: write documentation
 %% @end
 %%--------------------------------------------------------------------
--spec parse(Packet :: iolist() | binary()) -> [proplists:property()].
+-spec parse(Packet :: iodata()) -> [proplists:property()].
 parse(Packet) when is_list(Packet) ->
     parse(list_to_binary(Packet));
 parse(<<":", Packet/binary>>) ->

@@ -41,14 +41,15 @@
 -include_lib("eunit/include/eunit.hrl").
 -endif.
 
-
-
+%% -------------------------------------------------------------------
+%% Parser state record
+%% -------------------------------------------------------------------
 -record(state, {
-                last_space = true,
-                prefix = <<>>,
-                command = <<>>,
-                args = [],
-                accumulator = <<>>
+                last_space = true   :: boolean(),
+                prefix = <<>>       :: binary(),
+                command = <<>>      :: binary(),
+                args = []           :: [binary()],
+                accumulator = <<>>  :: binary()
                }).
 
 %%--------------------------------------------------------------------
@@ -61,11 +62,25 @@ parse(Packet) when is_list(Packet) ->
 parse(<<":", Packet/binary>>) ->
     % Packet with prefix, extract it
     [Prefix | Tail] = re:split(Packet, " +", [{parts, 2}]),
-    parse_command(Tail, Prefix);
+    case Tail of
+        [] ->
+            % A single prefix without a command?!?!?!
+            throw(malformed_packet);
+        _ ->
+            parse_command(hd(Tail), Prefix)
+    end;
 parse(Packet) ->
     % Packet without prefix, fall to parse_command
     parse_command(Packet, <<>>).
 
+%% ===================================================================
+%% Internal functions
+%% ===================================================================
+
+%% -------------------------------------------------------------------
+%% IRC parser - second stage: parse command
+%% -------------------------------------------------------------------
+-spec parse_command(Packet::binary(), Prefix::binary()) -> [proplists:property()].
 parse_command(Packet, Prefix) ->
     [Command | Args] = re:split(Packet, " +", [{parts, 2}]),
     case Args of
@@ -75,6 +90,10 @@ parse_command(Packet, Prefix) ->
             parse_args(hd(Args), #state{prefix=Prefix, command=Command})
     end.
 
+%% -------------------------------------------------------------------
+%% IRC parser - third stage: parse arguments (yikes!)
+%% -------------------------------------------------------------------
+-spec parse_args(Packet::binary(), State::#state{}) -> [proplists:property()].
 parse_args(<<>>, #state{accumulator = Acc} = State) when size(Acc) =:= 0 ->
     % End of arguments, build the final proplist for this packet
     [
@@ -171,6 +190,10 @@ multiple_spaces_between_args_test() ->
                  proplists:get_value(command, Packet)),
     ?assertEqual([<<"ident">>, <<"host">>, <<$0>>, <<"gecos">>],
                  proplists:get_value(args, Packet)),
+    ok.
+
+prefix_without_command_test() ->
+    ?assertThrow(malformed_packet, parse(":loneprefix")),
     ok.
 
 -endif.

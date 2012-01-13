@@ -1,8 +1,11 @@
 ebin/
+priv/
 *.beam
 *.gz
 *~
 *.swp
+*.o
+*.so
 [#]*[#]
 doc/
 .eunit/

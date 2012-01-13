@@ -35,7 +35,23 @@
 %% ===================================================================
 %% Public API
 %% ===================================================================
--export([parse/1]).
+-export([
+         parse/1,
+         to_rfc1459_upper/1,
+         to_rfc1459_lower/1
+        ]).
+
+%% -------------------------------------------------------------------
+%% Load callback
+%% -------------------------------------------------------------------
+-on_load(init/0).
+
+%% -------------------------------------------------------------------
+%% Placeholder for NIFs
+%% -------------------------------------------------------------------
+-define(nif_stub, nif_stub_error(?LINE)).
+nif_stub_error(Line) ->
+    erlang:nif_error({nif_not_loaded,module,?MODULE,line,Line}).
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
@@ -73,9 +89,54 @@ parse(Packet) ->
     % Packet without prefix, fall to parse_command
     parse_command(Packet, <<>>).
 
+%%--------------------------------------------------------------------
+%% @doc FIXME: write documentation
+%% @end
+%%--------------------------------------------------------------------
+-spec to_rfc1459_upper(Str :: string() | binary()) -> binary().
+to_rfc1459_upper(Str)->
+    case rfc1459_upper(Str) of
+        {error, Reason} ->
+            throw(Reason);
+        NewStr when is_list(Str) ->
+            binary_to_list(NewStr);
+        NewStr ->
+            NewStr
+    end.
+
+%%--------------------------------------------------------------------
+%% @doc FIXME: write documentation
+%% @end
+%%--------------------------------------------------------------------
+-spec to_rfc1459_lower(Str :: string() | binary()) -> binary().
+to_rfc1459_lower(Str)->
+    case rfc1459_lower(Str) of
+        {error, Reason} ->
+            throw(Reason);
+        NewStr when is_list(Str) ->
+            binary_to_list(NewStr);
+        NewStr ->
+            NewStr
+    end.
+
 %% ===================================================================
 %% Internal functions
 %% ===================================================================
+
+%% -------------------------------------------------------------------
+%% Module initializer
+%% -------------------------------------------------------------------
+-spec init() -> none().
+init() ->
+    PrivDir = case code:priv_dir(?MODULE) of
+                  {error, bad_name} ->
+                      EbinDir = filename:dirname(code:which(?MODULE)),
+                      AppPath = filename:dirname(EbinDir),
+                      filename:join(AppPath, "priv");
+                  Path ->
+                      Path
+              end,
+    erlang:load_nif(filename:join(PrivDir, ?MODULE), 0).
 
 %% -------------------------------------------------------------------
 %% IRC parser - second stage: parse command
@@ -119,13 +180,32 @@ parse_args(<<Ch:8, Packet/binary>>, State) ->
     Acc = <<(State#state.accumulator)/binary, Ch>>,
     parse_args(Packet, State#state{last_space = false, accumulator = Acc}).
 
+%% -------------------------------------------------------------------
+%% Stub for internal NIF rfc1459_upper/1
+%% -------------------------------------------------------------------
+-spec rfc1459_upper(string() | binary()) -> binary()
+                                          | {'error', atom()}.
+rfc1459_upper(_Str) ->
+    ?nif_stub.
+
+%% -------------------------------------------------------------------
+%% Stub for internal NIF rfc1459_lower/1
+%% -------------------------------------------------------------------
+-spec rfc1459_lower(string() | binary()) -> binary()
+                                          | {'error', atom()}.
+rfc1459_lower(_Str) ->
+    ?nif_stub.
+
 %% ===================================================================
 %% EUnit Tests
 %% ===================================================================
 
 -ifdef(TEST).
 
-empty_packet_test() ->
+%% -------------------------------------------------------------------
+%% parse/1 tests
+%% -------------------------------------------------------------------
+parse_empty_packet_test() ->
     Packet = parse([]),
     ?assertEqual(<<>>,
                  proplists:get_value(prefix, Packet)),
@@ -135,12 +215,12 @@ empty_packet_test() ->
                  proplists:get_value(args, Packet)),
     ok.
 
-single_command_test() ->
+parse_single_command_test() ->
     ?assertEqual("QUIT",
                  proplists:get_value(command, parse("QUIT"))),
     ok.
 
-command_with_prefix_test() ->
+parse_command_with_prefix_test() ->
     Packet = parse(<<":prefix cmd">>),
     ?assertEqual(<<"prefix">>,
                  proplists:get_value(prefix, Packet)),
@@ -148,7 +228,7 @@ command_with_prefix_test() ->
                  proplists:get_value(command, Packet)),
     ok.
 
-command_with_args_noprefix_test() ->
+parse_command_with_args_noprefix_test() ->
     Packet = parse(<<"kick #altrove nMe :ciao, papi!">>),
     ?assertEqual(<<>>,
                  proplists:get_value(prefix, Packet)),
@@ -158,7 +238,7 @@ command_with_args_noprefix_test() ->
                  proplists:get_value(args, Packet)),
     ok.
 
-command_with_args_prefix_test() ->
+parse_command_with_args_prefix_test() ->
     Packet = parse(<<":roBOTic!bot@localop.azzurra.org KICK #italia Nio :I've got the power!">>),
     ?assertEqual(<<"roBOTic!bot@localop.azzurra.org">>,
                  proplists:get_value(prefix, Packet)),
@@ -172,7 +252,7 @@ command_with_args_prefix_test() ->
                  proplists:get_value(args, Packet)),
     ok.
 
-command_with_no_trailing_arg_test() ->
+parse_command_with_no_trailing_arg_test() ->
     Packet = parse(<<":Kab00m!bot@localop.azzurra.org MODE #services +o morph">>),
     ?assertEqual(<<"Kab00m!bot@localop.azzurra.org">>,
                  proplists:get_value(prefix, Packet)),
@@ -182,7 +262,7 @@ command_with_no_trailing_arg_test() ->
                  proplists:get_value(args, Packet)),
     ok.
 
-multiple_spaces_between_args_test() ->
+parse_multiple_spaces_between_args_test() ->
     Packet = parse(<<"USER  ident   host  0     :gecos">>),
     ?assertEqual(<<>>,
                  proplists:get_value(prefix, Packet)),
@@ -192,8 +272,96 @@ multiple_spaces_between_args_test() ->
                  proplists:get_value(args, Packet)),
     ok.
 
-prefix_without_command_test() ->
+parse_prefix_without_command_test() ->
     ?assertThrow(malformed_packet, parse(":loneprefix")),
+    ok.
+
+%% -------------------------------------------------------------------
+%% to_rfc1459_upper/1 tests
+%% -------------------------------------------------------------------
+to_rfc1459_upper_identity_test() ->
+    ?assertEqual("UPPERCASE",
+                 to_rfc1459_upper("UPPERCASE")),
+    ?assertEqual(<<"UPPERCASE">>,
+                 to_rfc1459_upper(<<"UPPERCASE">>)),
+    ?assertEqual("[]\\^",
+                 to_rfc1459_upper("[]\\^")),
+    ?assertEqual(<<"[]\\^">>,
+                 to_rfc1459_upper(<<"[]\\^">>)),
+    ok.
+
+to_rfc1459_upper_all_lower_test() ->
+    ?assertEqual("ALL LOWER",
+                 to_rfc1459_upper("all lower")),
+    ?assertEqual(<<"ALL LOWER">>,
+                 to_rfc1459_upper(<<"all lower">>)),
+    ok.
+
+to_rfc1459_upper_all_special_test() ->
+    ?assertEqual("[]\\^",
+                 to_rfc1459_upper("{}|~")),
+    ?assertEqual(<<"[]\\^">>,
+                 to_rfc1459_upper(<<"{}|~">>)),
+    ok.
+
+to_rfc1459_upper_mixed_test() ->
+    ?assertEqual("MORPH\\AWAY",
+                 to_rfc1459_upper("Morph|away")),
+    ?assertEqual(<<"MORPH\\AWAY">>,
+                 to_rfc1459_upper(<<"Morph|away">>)),
+    ok.
+
+%% -------------------------------------------------------------------
+%% to_rfc1459_lower/1 tests
+%% -------------------------------------------------------------------
+to_rfc1459_lower_identity_test() ->
+    ?assertEqual("lowercase",
+                 to_rfc1459_lower("LOWERCASE")),
+    ?assertEqual(<<"lowercase">>,
+                 to_rfc1459_lower(<<"LOWERCASE">>)),
+    ?assertEqual("{}|~",
+                 to_rfc1459_lower("{}|~")),
+    ?assertEqual(<<"{}|~">>,
+                 to_rfc1459_lower(<<"{}|~">>)),
+    ok.
+
+to_rfc1459_lower_all_upper_test() ->
+    ?assertEqual("all upper",
+                 to_rfc1459_lower("ALL UPPER")),
+    ?assertEqual(<<"all upper">>,
+                 to_rfc1459_lower(<<"ALL UPPER">>)),
+    ok.
+
+to_rfc1459_lower_all_special_test() ->
+    ?assertEqual("{}|~",
+                 to_rfc1459_lower("[]\\^")),
+    ?assertEqual(<<"{}|~">>,
+                 to_rfc1459_lower(<<"[]\\^">>)),
+    ok.
+
+to_rfc1459_lower_mixed_test() ->
+    ?assertEqual("morph|away",
+                 to_rfc1459_lower("Morph\\Away")),
+    ?assertEqual(<<"morph|away">>,
+                 to_rfc1459_lower(<<"Morph\\Away">>)),
+    ok.
+
+%% -------------------------------------------------------------------
+%% Identity tests for to_rfc1459_upper/1 and to_rfc1459_lower/1
+%% -------------------------------------------------------------------
+rfc1459_casemapping_identity_test() ->
+    TestStringUp = "^\\TESTSTRING\\^",
+    TestStringLow = "~|teststring|~",
+    TestBinUp = list_to_binary(TestStringUp),
+    TestBinLow = list_to_binary(TestStringLow),
+    ?assertEqual(TestStringUp,
+                 to_rfc1459_upper(to_rfc1459_lower(TestStringUp))),
+    ?assertEqual(TestBinUp,
+                 to_rfc1459_upper(to_rfc1459_lower(TestBinUp))),
+    ?assertEqual(TestStringLow,
+                 to_rfc1459_lower(to_rfc1459_upper(TestStringLow))),
+    ?assertEqual(TestBinLow,
+                 to_rfc1459_lower(to_rfc1459_upper(TestBinLow))),
     ok.
 
 -endif.

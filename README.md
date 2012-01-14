@@ -6,12 +6,14 @@ libirc is an IRC utility library for Erlang.
 
 **Feedback:** morpheus@azzurra.org
 
+
 ## Features
 
 * Mostly [RFC2812][]-compliant parser, with some requirements relaxed
 * Parser is role-agnostic, it can be used both in client or server contexts
 * [RFC1459 case mapping][rfc1459] functions are implemented as NIFs
 * Still needs a lot of work :-)
+
 
 ## Usage Examples
 
@@ -25,6 +27,7 @@ libirc is an IRC utility library for Erlang.
 3> libirc:to_rfc1459_lower(<<"A binary TOO!">>).
 <<"a binary too!">>
 ```
+
 
 ## Bug reports
 

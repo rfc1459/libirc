@@ -110,8 +110,9 @@ static const char rfc1459_upper_tbl[] =
  * Arguments    : Str :: binary()
  * Returns      : binary() | {'error', Reason::atom()}
  */
-ERL_NIF_TERM libirc_rfc1459_upper(ErlNifEnv* env, int argc,
-                                  const ERL_NIF_TERM argv[])
+ERL_NIF_TERM
+libirc_rfc1459_upper(ErlNifEnv* env, int argc,
+                     const ERL_NIF_TERM argv[])
 {
     return libirc_rfc1459_case(1, env, argc, argv);
 }
@@ -122,8 +123,9 @@ ERL_NIF_TERM libirc_rfc1459_upper(ErlNifEnv* env, int argc,
  * Arguments    : Str :: binary()
  * Returns      : binary() | {'error', Reason::atom()}
  */
-ERL_NIF_TERM libirc_rfc1459_lower(ErlNifEnv* env, int argc,
-                                  const ERL_NIF_TERM argv[])
+ERL_NIF_TERM
+libirc_rfc1459_lower(ErlNifEnv* env, int argc,
+                     const ERL_NIF_TERM argv[])
 {
     return libirc_rfc1459_case(0, env, argc, argv);
 }
@@ -137,9 +139,9 @@ ERL_NIF_TERM libirc_rfc1459_lower(ErlNifEnv* env, int argc,
  * Arguments    : Str :: binary(), ToUpper :: 1 | 0
  * Returns      : binary() | {'error', Reason::atom()}
  */
-static
-ERL_NIF_TERM libirc_rfc1459_case(char ToUpper, ErlNifEnv* env,
-                                 int argc, const ERL_NIF_TERM argv[])
+static ERL_NIF_TERM
+libirc_rfc1459_case(char ToUpper, ErlNifEnv* env,
+                    int argc, const ERL_NIF_TERM argv[])
 {
     ErlNifBinary str, rv;
     const char* trans_tbl = ToUpper ? rfc1459_upper_tbl : rfc1459_lower_tbl;
@@ -169,4 +171,3 @@ ERL_NIF_TERM libirc_rfc1459_case(char ToUpper, ErlNifEnv* env,
     /* Transfer ownership of the target binary to Erlang */
     return enif_make_binary(env, &rv);
 }
-

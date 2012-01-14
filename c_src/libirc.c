@@ -32,7 +32,8 @@ static ErlNifFunc nif_funcs[] =
 };
 
 /* Utility functions for returning errors */
-ERL_NIF_TERM make_atom(ErlNifEnv* env, const char* name)
+ERL_NIF_TERM
+make_atom(ErlNifEnv* env, const char* name)
 {
     ERL_NIF_TERM atom;
     if (enif_make_existing_atom(env, name, &atom, ERL_NIF_LATIN1))
@@ -42,7 +43,8 @@ ERL_NIF_TERM make_atom(ErlNifEnv* env, const char* name)
     return enif_make_atom(env, name);
 }
 
-ERL_NIF_TERM make_error(ErlNifEnv* env, const char* reason)
+ERL_NIF_TERM
+make_error(ErlNifEnv* env, const char* reason)
 {
     ERL_NIF_TERM error = make_atom(env, "error");
     return enif_make_tuple2(env, error, make_atom(env, reason));

@@ -140,15 +140,11 @@ ERL_NIF_TERM libirc_rfc1459_case(char ToUpper, ErlNifEnv* env,
     const char* trans_tbl = ToUpper ? rfc1459_upper_tbl : rfc1459_lower_tbl;
     size_t i;
 
-    /* Do we have a binary? */
-    if (!enif_inspect_binary(env, argv[0], &str))
+    /* Do we have a valid list or binary? */
+    if (!enif_inspect_iolist_as_binary(env, argv[0], &str))
     {
-        /* Try again as an iolist */
-        if (!enif_inspect_iolist_as_binary(env, argv[0], &str))
-        {
-            /* Nope, throw a badarg */
-            return enif_make_badarg(env);
-        }
+        /* Nope, throw a badarg */
+        return enif_make_badarg(env);
     }
 
     /* Create a new binary with the same size of the incoming argument */

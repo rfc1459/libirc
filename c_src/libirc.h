@@ -1,5 +1,5 @@
 /*
- * libirc.c: Erlang NIF functions for libirc
+ * libirc.h: Erlang NIF functions for libirc
  * Copyright (c) 2012, Matteo Panella <morpheus@azzurra.org>
  * All rights reserved.
  *
@@ -22,31 +22,21 @@
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-#include "libirc.h"
+#include "erl_nif.h"
 
-/* NIF table */
-static ErlNifFunc nif_funcs[] =
-{
-    {"rfc1459_upper", 1, libirc_rfc1459_upper},
-    {"rfc1459_lower", 1, libirc_rfc1459_lower}
-};
+#ifndef LIBIRC_H
+#define LIBIRC_H 1
 
-/* Utility functions for returning errors */
-ERL_NIF_TERM make_atom(ErlNifEnv* env, const char* name)
-{
-    ERL_NIF_TERM atom;
-    if (enif_make_existing_atom(env, name, &atom, ERL_NIF_LATIN1))
-    {
-        return atom;
-    }
-    return enif_make_atom(env, name);
-}
+/* Function prototypes */
 
-ERL_NIF_TERM make_error(ErlNifEnv* env, const char* reason)
-{
-    ERL_NIF_TERM error = make_atom(env, "error");
-    return enif_make_tuple2(env, error, make_atom(env, reason));
-}
+/* libirc.c */
+extern ERL_NIF_TERM make_atom(ErlNifEnv* env, const char* name);
+extern ERL_NIF_TERM make_error(ErlNifEnv* env, const char* reason);
 
-/* Standard erl_nif initializer */
-ERL_NIF_INIT(libirc, nif_funcs, NULL, NULL, NULL, NULL);
+/* libirc_casemapping.c */
+extern ERL_NIF_TERM libirc_rfc1459_upper(ErlNifEnv* env, int argc,
+                                         const ERL_NIF_TERM argv[]);
+extern ERL_NIF_TERM libirc_rfc1459_lower(ErlNifEnv* env, int argc,
+                                         const ERL_NIF_TERM argv[]);
+
+#endif /* LIBIRC_H */

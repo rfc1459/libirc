@@ -31,7 +31,16 @@
 %%%-------------------------------------------------------------------
 -module(libirc_tests).
 
+-include_lib("proper/include/proper.hrl").
 -include_lib("eunit/include/eunit.hrl").
+
+%% ===================================================================
+%% EUnit generator for PropEr tests
+%% ===================================================================
+proper_test_() ->
+    [{atom_to_list(F),
+      fun() -> ?assert(proper:quickcheck(?MODULE:F(), [long_result])) end}
+     || {F, 0} <- ?MODULE:module_info(exports), F > 'prop_', F < 'prop`'].
 
 %% ===================================================================
 %% libirc:parse/1 tests
@@ -195,3 +204,91 @@ rfc1459_casemapping_identity_test() ->
     ?assertEqual(TestBinLow,
                  libirc:to_rfc1459_lower(libirc:to_rfc1459_upper(TestBinLow))),
     ok.
+
+
+%% ===================================================================
+%% PropEr tests for irclib:to_rfc1459_upper/1
+%% ===================================================================
+
+%% -------------------------------------------------------------------
+%% Ensure same length for input and output and correct mapping
+%% -------------------------------------------------------------------
+prop_to_upper_same_length_correct_mapping() ->
+    ?FORALL(Str, union([binary(), list(byte())]),
+        begin
+                UpStr = libirc:to_rfc1459_upper(Str),
+                conjunction([
+                             {same_length, subprop_same_length(Str, UpStr)},
+                             {correct_mapping, subprop_upper_map(Str, UpStr)}
+                            ])
+        end).
+
+%% -------------------------------------------------------------------
+%% Sub-property: ensure each character translates correctly to upper
+%%               case
+%% -------------------------------------------------------------------
+subprop_upper_map(Original, Upper) when is_binary(Original), is_binary(Upper) ->
+    subprop_upper_map(binary_to_list(Original), binary_to_list(Upper));
+subprop_upper_map(Original, Upper) when is_list(Original), is_list(Upper) ->
+    lists:all(fun upper_check/1, lists:zip(Original, Upper)).
+
+%% RFC1459 to_upper mapping rules
+upper_check({Original, Upper}) ->
+    Upper =:= case Original of
+        Alpha when Alpha >= $a, Alpha =< $z ->
+            Alpha band 223;
+        Sym when Sym >= ${, Sym =< $~ ->
+            Sym band 223;
+        Other ->
+            Other
+    end.
+
+
+%% ===================================================================
+%% PropEr tests for irclib:to_rfc1459_lower/1
+%% ===================================================================
+
+%% -------------------------------------------------------------------
+%% Ensure same length for input and output and correct mapping
+%% -------------------------------------------------------------------
+prop_to_lower_same_length_correct_mapping() ->
+    ?FORALL(Str, union([binary(), list(byte())]),
+        begin
+                LowStr = libirc:to_rfc1459_lower(Str),
+                conjunction([
+                             {same_length, subprop_same_length(Str, LowStr)},
+                             {correct_mapping, subprop_lower_map(Str, LowStr)}
+                            ])
+        end).
+
+%% -------------------------------------------------------------------
+%% Sub-property: ensure each character translates correctly to lower
+%%               case
+%% -------------------------------------------------------------------
+subprop_lower_map(Original, Lower) when is_binary(Original), is_binary(Lower) ->
+    subprop_lower_map(binary_to_list(Original), binary_to_list(Lower));
+subprop_lower_map(Original, Lower) when is_list(Original), is_list(Lower) ->
+    lists:all(fun lower_check/1, lists:zip(Original, Lower)).
+
+%% RFC1459 to_lower mapping rules
+lower_check({Original, Lower}) ->
+    Lower =:= case Original of
+        Alpha when Alpha >= $A, Alpha =< $Z ->
+            Alpha bor 32;
+        Sym when Sym >= $[, Sym =< $^ ->
+            Sym bor 32;
+        Other ->
+            Other
+    end.
+
+%% ===================================================================
+%% Common sub-properties
+%% ===================================================================
+
+%% -------------------------------------------------------------------
+%% Ensure both arguments have the same length
+%% -------------------------------------------------------------------
+subprop_same_length(A, B) when is_binary(A), is_binary(B) ->
+    size(A) =:= size(B);
+subprop_same_length(A, B) when is_list(A), is_list(B) ->
+    length(A) =:= length(B).

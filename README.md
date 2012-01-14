@@ -22,8 +22,8 @@ libirc is an IRC utility library for Erlang.
 [{prefix,<<>>},
  {command,"PRIVMSG"},
  {args,[<<"#services">>,<<"hello, there!">>]}]
-2> libirc:to_rfc1459_upper("~some string}").
-"^SOME STRING]"
+2> libirc:to_rfc1459_upper("~{some string}").
+"^[SOME STRING]"
 3> libirc:to_rfc1459_lower(<<"A binary TOO!">>).
 <<"a binary too!">>
 ```

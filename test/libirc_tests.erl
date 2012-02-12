@@ -49,14 +49,14 @@ parse_empty_packet_test() ->
     Packet = libirc:parse([]),
     ?assertEqual(<<>>,
                  proplists:get_value(prefix, Packet)),
-    ?assertEqual([],
+    ?assertEqual(<<>>,
                  proplists:get_value(command, Packet)),
     ?assertEqual([],
                  proplists:get_value(args, Packet)),
     ok.
 
 parse_single_command_test() ->
-    ?assertEqual("QUIT",
+    ?assertEqual(<<"QUIT">>,
                  proplists:get_value(command, libirc:parse("QUIT"))),
     ok.
 
@@ -64,7 +64,7 @@ parse_command_with_prefix_test() ->
     Packet = libirc:parse(<<":prefix cmd">>),
     ?assertEqual(<<"prefix">>,
                  proplists:get_value(prefix, Packet)),
-    ?assertEqual("CMD",
+    ?assertEqual(<<"CMD">>,
                  proplists:get_value(command, Packet)),
     ok.
 
@@ -72,7 +72,7 @@ parse_command_with_args_noprefix_test() ->
     Packet = libirc:parse(<<"kick #altrove nMe :ciao, papi!">>),
     ?assertEqual(<<>>,
                  proplists:get_value(prefix, Packet)),
-    ?assertEqual("KICK",
+    ?assertEqual(<<"KICK">>,
                  proplists:get_value(command, Packet)),
     ?assertEqual([<<"#altrove">>, <<"nMe">>, <<"ciao, papi!">>],
                  proplists:get_value(args, Packet)),
@@ -82,7 +82,7 @@ parse_command_with_args_prefix_test() ->
     Packet = libirc:parse(<<":roBOTic!bot@localop.azzurra.org KICK #italia Nio :I've got the power!">>),
     ?assertEqual(<<"roBOTic!bot@localop.azzurra.org">>,
                  proplists:get_value(prefix, Packet)),
-    ?assertEqual("KICK",
+    ?assertEqual(<<"KICK">>,
                  proplists:get_value(command, Packet)),
     ?assertEqual([
                   <<"#italia">>,
@@ -96,7 +96,7 @@ parse_command_with_no_trailing_arg_test() ->
     Packet = libirc:parse(<<":Kab00m!bot@localop.azzurra.org MODE #services +o morph">>),
     ?assertEqual(<<"Kab00m!bot@localop.azzurra.org">>,
                  proplists:get_value(prefix, Packet)),
-    ?assertEqual("MODE",
+    ?assertEqual(<<"MODE">>,
                  proplists:get_value(command, Packet)),
     ?assertEqual([<<"#services">>, <<"+o">>, <<"morph">>],
                  proplists:get_value(args, Packet)),
@@ -106,7 +106,7 @@ parse_multiple_spaces_between_args_test() ->
     Packet = libirc:parse(<<"USER  ident   host  0     :gecos">>),
     ?assertEqual(<<>>,
                  proplists:get_value(prefix, Packet)),
-    ?assertEqual("USER",
+    ?assertEqual(<<"USER">>,
                  proplists:get_value(command, Packet)),
     ?assertEqual([<<"ident">>, <<"host">>, <<$0>>, <<"gecos">>],
                  proplists:get_value(args, Packet)),

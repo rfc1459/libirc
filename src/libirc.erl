@@ -155,7 +155,7 @@ parse_args(<<>>, #state{accumulator = Acc} = State) when size(Acc) =:= 0 ->
     % End of arguments, build the final proplist for this packet
     [
      {prefix, State#state.prefix},
-     {command, string:to_upper(binary_to_list(State#state.command))},
+     {command, list_to_binary(string:to_upper(binary_to_list(State#state.command)))},
      {args, lists:reverse(State#state.args)}
     ];
 parse_args(<<>>, #state{accumulator = Acc} = State) ->

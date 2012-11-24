@@ -50,5 +50,27 @@ make_error(ErlNifEnv* env, const char* reason)
     return enif_make_tuple2(env, error, make_atom(env, reason));
 }
 
+/* Defined so that EUnit tests don't crap out */
+static int
+libirc_load_stub(ErlNifEnv* env, void** priv_data, ERL_NIF_TERM load_info)
+{
+    return 0;
+}
+
+/* Ditto */
+static int
+libirc_upgrade_stub(ErlNifEnv* env, void** priv_data, void** old_priv_data, ERL_NIF_TERM load_info)
+{
+    return 0;
+}
+
+/* Likewise */
+static void
+libirc_unload_stub(ErlNifEnv* env, void* priv_data)
+{
+    // No-op
+    ;
+}
+
 /* Standard erl_nif initializer */
-ERL_NIF_INIT(libirc, nif_funcs, NULL, NULL, NULL, NULL);
+ERL_NIF_INIT(libirc, nif_funcs, libirc_load_stub, NULL, libirc_upgrade_stub, libirc_unload_stub);
